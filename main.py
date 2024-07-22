@@ -9,12 +9,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Tic Tac Toe")
         self.setGeometry(100, 100, 400, 400)
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        Center = QWidget(self)
+        self.setCentralWidget(Center)
 
-        board = Board(self)
-
-        central_widget.setLayout(board.grid)
+        board = Board(Center)
 
 Frame = MainWindow()
 Frame.show()

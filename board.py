@@ -1,34 +1,41 @@
-from PySide6.QtWidgets import QPushButton, QGridLayout
-
-class Button(QPushButton):
-    def __init__(self, parent, row, column):
-        super().__init__(parent)
-        self.setFixedSize(100, 100)
-        self.setFlat(True)
-        self.setStyleSheet('font-size: 40px;')
-        self.row = row
-        self.column = column
-        self.clicked.connect(self.react)
-    
-    def react(self):
-        print('Clicked Button:', self.row, self.column)
+from PySide6.QtWidgets import QGridLayout
+from typing import overload
+from warpper import Button
 
 class Board:
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self, parent):
-        self.grid = QGridLayout(parent)
+        grid = QGridLayout(parent)
         for row in range(3):
             for column in range(3):
                 button = Button(parent, row, column)
                 self.broad[row][column] = button
-                self.grid.addWidget(button, row, column)
+                button.clicked.connect(lambda *x, b=button: self.emit(b))
+                grid.addWidget(button, row, column)
 
-    def row(self, row:int) -> list[Button]:
+    def get(self, row:int, column:int):
+        return self.broad[row][column]
+
+    def row(self, row:int):
         return self.broad[row]
 
-    def column(self, column:int) -> list[Button]:
-        return [self.broad[row][column] for row in range(3)]
+    def column(self, column:int):
+        return [self.get(row, column) for row in range(3)]
 
-    def diagonal(self, diagonal:int) -> list[Button]:
-        return [self.broad[i][2 - i] for i in range(3)] if diagonal else [self.broad[i][i] for i in range(3)]
+    def diagonal(self, diagonal:int):
+        return [self.get(i, 2 - i) for i in range(3)] if diagonal else [self.get(i, i) for i in range(3)]
+
+    @property
+    def buttons(self):
+        for r in range(3):
+            for b in self.row(r):
+                yield b
+
+    @overload
+    def emit(self, row:int, column:int):
+        button = self.get(row, column)
+        self.emit(button)
+
+    def emit(self, button:Button):
+        button.react()
