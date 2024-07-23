@@ -28,9 +28,9 @@ class ButtonStack(list[Button]):
         super().insert(0, button)
         for i in range(len(self)):
             button = self[i]
-            opacity = 255 - i*255//6
+            opacity = 255 - i*255//3
             if not opacity:
-                WapperInstances.empty.apply(self.pop(i))
+                WapperInstances.empty.apply(self.pop())
             else:
                 button.opacity = opacity
                 button.style_update()
@@ -50,7 +50,9 @@ class RawWapper:
         button.style_update()
 
 class Warpper(RawWapper):
-    stack = ButtonStack()
+
+    def __init__(self):
+        self.stack = ButtonStack()
 
     def apply(self, button:Button):
         super().apply(button)
