@@ -1,8 +1,12 @@
 from PySide6.QtWidgets import QGridLayout
+from default import default
+from button import Button, Wrapper
+from player import Player
 from typing import overload
-from warpper import Button
+
 
 class Board:
+    gaming = True
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self, parent):
@@ -14,6 +18,14 @@ class Board:
                 button.clicked.connect(lambda *x, b=button: self.emit(b))
                 grid.addWidget(button, row, column)
 
+    def restart(self):
+        self.gaming = True
+        for button in self.buttons:
+            button.setFlat(True)
+            Wrapper.clear(button)
+        for player in default.players:
+            player.queue.clear()
+
     def get(self, row:int, column:int):
         return self.broad[row][column]
 
@@ -21,9 +33,9 @@ class Board:
         return self.broad[row]
 
     def column(self, column:int):
-        return [self.get(row, column) for row in range(3)]
+        return [self.row(row)[column] for row in range(3)]
 
-    def diagonal(self, diagonal:int):
+    def diagonal(self, diagonal:int|bool):
         return [self.get(i, 2 - i) for i in range(3)] if diagonal else [self.get(i, i) for i in range(3)]
 
     @property
@@ -38,4 +50,35 @@ class Board:
         self.emit(button)
 
     def emit(self, button:Button):
-        button.react()
+        if self.gaming:
+            default.apply(button)
+            for i in range(3):
+                rowj = self.judge(self.row(i))
+                if rowj != -1:
+                    self.win(rowj)
+                    break
+                colj = self.judge(self.column(i))
+                if colj != -1:
+                    self.win(colj)
+                    break
+                diaj = self.judge(self.diagonal(bool(i)))
+                if diaj != -1:
+                    self.win(diaj)
+                    break
+        else:
+            self.restart()
+
+    def judge(self, buttons:list[Button]):
+        for player in default.players:
+            queue = player.queue
+            if set(queue).issuperset(set(buttons)):
+                return player.index
+        return -1
+    
+    def win(self, index:int):
+        self.gaming = False
+        winner = default.player(index)
+        for button in winner.queue:
+            button.opacity = 255
+            button.setFlat(False)
+            super(Player, winner).apply(button)
