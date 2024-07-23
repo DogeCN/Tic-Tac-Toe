@@ -12,7 +12,7 @@ class MainWindow(QMainWindow):
         Center = QWidget(self)
         self.setCentralWidget(Center)
 
-        board = Board(Center)
+        Board(Center)
 
 Frame = MainWindow()
 Frame.show()
