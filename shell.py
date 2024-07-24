@@ -2,6 +2,8 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 from PySide6.QtCore import Signal
 from game.board import Board
 from threading import Thread
+from random import randint
+from iobase import dump, load
 import time
 
 class MainWindow(QMainWindow):
@@ -13,49 +15,60 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 400, 400)
         Center = QWidget(self)
         self.setCentralWidget(Center)
-        self.broad = Board(Center)
+        self.board = Board(Center)
 
         self.choose.connect(self.choose_)
     
     def choose_(self, index:int):
-        self.broad.buttons[index].click()
+        self.board.buttons[index].click()
 
     def get_(self, current:int):
-        broad = [0 for _ in range(9)]
-        for player in self.broad.group.players:
+        board = [0 for _ in range(9)]
+        for player in self.board.group.players:
             for button in player.queue:
                 sign = button.sign
-                broad[button.row * 3 + button.column] = sign if player.index == current else 256-sign
-        return bytes(broad)
+                board[button.row * 3 + button.column] = sign if player.index == current else 256-sign
+        return bytes(board)
 
 class QLearning:
-    qtable = {} #type: dict[bytes, list[float]]
-    choices = [] #type: list[tuple[list, int]]
 
-    def choice(self, broad:bytes = None):
-        if not broad:
-            broad = bytes([0 for _ in range(9)])
+    def __init__(self):
+        self.qtable = {} #type: dict[bytes, list[float]]
+        self.choices = [] #type: list[tuple[list, int]]
 
-        if broad in self.qtable:
-            rates = self.qtable[broad]
+    def choice(self, board:bytes = None):
+        exists = []
+        if board:
+            blist = list(board)
+            for i in range(len(blist)):
+                if blist[i] != 0:
+                    exists.append(i)
+        else:
+            board = bytes([0 for _ in range(9)])
+        print(board)
+        if board in self.qtable:
+            rates = self.qtable[board]
             mrate = max(rates)
             indexes = []
             for i in range(len(rates)):
                 if rates[i] == mrate:
                     indexes.append(i)
-            ri = indexes[self.random(len(indexes))]
+            ri = indexes[randint(0, len(indexes)-1)]
+            while ri in exists:
+                ri = indexes[randint(0, len(indexes)-1)]
             self.choices.append((rates, ri))
-            return rates[ri]
-        else:
-            empty = [0 for _ in range(9)]
-            self.qtable[broad] = empty
-            ri = self.random(9)
-            self.choices.append((empty, ri))
             return ri
+        else:
+            return self.rand_choice(board, exists)
 
-    @staticmethod
-    def random(max):
-        return int(time.time()) % max
+    def rand_choice(self, board, exists):
+        empty = [0 for _ in range(9)]
+        self.qtable[board] = empty
+        ri = randint(0, 8)
+        while ri in exists:
+            ri = randint(0, 8)
+        self.choices.append((empty, ri))
+        return ri
 
     def reward(self, reward:int):
         for rates, ri in self.choices:
@@ -77,7 +90,7 @@ class Shell:
     def make_choice(self, index:int, current:int):
         self.Frame.choose.emit(index)
         time.sleep(0.15)
-        if self.Frame.broad.gaming:
+        if self.Frame.board.gaming:
             return self.Frame.get_(current)
         else:
             return False
@@ -87,14 +100,34 @@ class Shell:
 
     def exec(self):
         current = 0
+        board = self.make_choice(self.ai(1).choice(), 1)
         while True:
-            board = self.make_choice(self.ai(current).choice(), current)
+            board = self.make_choice(self.ai(current).choice(board), current)
             if board:
                 current = 1 - current
             else:
-                self.ai(0).reward(1)
-                self.Frame.broad.restart()
+                self.ai(current).reward(1)
+                self.ai(1-current).reward(-1)
+                with open('Q1.log', 'w') as f1, open('Q2.log', 'w') as f2:
+                    table1 = self.ai(0).qtable
+                    for b in table1:
+                        f1.write(str(list(b)) + ':' + str(table1[b]) + '\n')
+                    table2 = self.ai(1).qtable
+                    for b in table2:
+                        f2.write(str(list(b)) + ':' + str(table2[b]) + '\n')
+                self.Frame.board.restart()
+                '''
+                dump('Q1.data', self.ai(0).qtable)
+                dump('Q2.data', self.ai(1).qtable)
+                '''
 
 shell = Shell()
 
+'''
+try:
+    shell.ai(0).qtable = load('Q1.data')
+    shell.ai(1).qtable = load('Q2.data')
+except:
+    ...
+'''
 shell.exec_()
