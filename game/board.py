@@ -1,3 +1,4 @@
+import time
 from PySide6.QtWidgets import QGridLayout
 from skins.default import default
 from game.button import Button, Wrapper
@@ -8,7 +9,8 @@ class Board:
     group = default
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
-    def __init__(self, parent):
+    def __init__(self, parent, qmodel):
+        self.model = qmodel
         grid = QGridLayout(parent)
         for row in range(3):
             for column in range(3):
@@ -52,15 +54,17 @@ class Board:
                 rowj = self.judge(self.row(i))
                 if rowj != -1:
                     self.win(rowj)
-                    break
+                    return
                 colj = self.judge(self.column(i))
                 if colj != -1:
                     self.win(colj)
-                    break
+                    return
                 diaj = self.judge(self.diagonal(bool(i)))
                 if diaj != -1:
                     self.win(diaj)
-                    break
+                    return
+            if not self.group._index:
+                self.model.choice()
         else:
             self.restart()
 
