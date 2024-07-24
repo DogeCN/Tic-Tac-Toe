@@ -1,4 +1,3 @@
-import time
 from PySide6.QtWidgets import QGridLayout
 from skins.default import default
 from game.button import Button, Wrapper
@@ -79,6 +78,6 @@ class Board:
         self.gaming = False
         winner = self.group.player(index)
         for button in winner.queue:
-            button.opacity = 255
+            button.sign = 3
             button.setFlat(False)
             super(Player, winner).apply(button)

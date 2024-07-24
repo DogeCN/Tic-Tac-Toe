@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.choose.connect(self.choose_)
     
     def choose_(self, index:int):
-        self.board.buttons[index].click()
+        self.board.buttons[index].animateClick()
 
     def get_board(self):
         board = [0 for _ in range(9)]
