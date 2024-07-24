@@ -1,4 +1,4 @@
-from button import *
+from game.button import *
 
 class Player(Wrapper):
 

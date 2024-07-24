@@ -1,4 +1,4 @@
-from player import PlayerGroup
+from game.player import PlayerGroup
 
 default = PlayerGroup()
 

@@ -12,6 +12,15 @@ class Button(QPushButton):
         self.row = row
         self.column = column
 
+    @property
+    def sign(self):
+        return self.opacity*3 // 255
+    
+    @sign.setter
+    def sign(self, sign:int):
+        self.opacity = sign*255 // 3
+        self.style_update()
+
     def style_update(self):
         color = f'color: rgba{(*self.color, self.opacity)};'
         self.setStyleSheet(self.style_sheet + color)
@@ -24,12 +33,11 @@ class ButtonQueue(list[Button]):
         super().insert(0, button)
         for i in range(len(self)):
             button = self[i]
-            opacity = 255 - i*255//3
-            if not opacity:
+            sign = 3 - i
+            if not sign:
                 Wrapper.clear(self.pop())
             else:
-                button.opacity = opacity
-                button.style_update()
+                button.sign = sign
 
 class Wrapper:
     text = ''

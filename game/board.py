@@ -1,12 +1,11 @@
 from PySide6.QtWidgets import QGridLayout
-from default import default
-from button import Button, Wrapper
-from player import Player
-from typing import overload
-
+from skins.default import default
+from game.button import Button, Wrapper
+from game.player import Player
 
 class Board:
     gaming = True
+    group = default
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self, parent):
@@ -23,7 +22,7 @@ class Board:
         for button in self.buttons:
             button.setFlat(True)
             Wrapper.clear(button)
-        for player in default.players:
+        for player in self.group.players:
             player.queue.clear()
 
     def get(self, row:int, column:int):
@@ -39,19 +38,16 @@ class Board:
         return [self.get(i, 2 - i) for i in range(3)] if diagonal else [self.get(i, i) for i in range(3)]
 
     @property
-    def buttons(self):
+    def buttons(self) -> list[Button]:
+        buttons = []
         for r in range(3):
             for b in self.row(r):
-                yield b
-
-    @overload
-    def emit(self, row:int, column:int):
-        button = self.get(row, column)
-        self.emit(button)
+                buttons.append(b)
+        return buttons
 
     def emit(self, button:Button):
         if self.gaming:
-            default.apply(button)
+            self.group.apply(button)
             for i in range(3):
                 rowj = self.judge(self.row(i))
                 if rowj != -1:
@@ -69,7 +65,7 @@ class Board:
             self.restart()
 
     def judge(self, buttons:list[Button]):
-        for player in default.players:
+        for player in self.group.players:
             queue = player.queue
             if set(queue).issuperset(set(buttons)):
                 return player.index
@@ -77,7 +73,7 @@ class Board:
     
     def win(self, index:int):
         self.gaming = False
-        winner = default.player(index)
+        winner = self.group.player(index)
         for button in winner.queue:
             button.opacity = 255
             button.setFlat(False)
