@@ -1,5 +1,5 @@
 from iobase import load
-from random import randint, choice
+from random import choice
 
 class QLearning:
 
@@ -8,27 +8,30 @@ class QLearning:
         self.qtable = load('q/Q.data')    #type: dict[bytes, list[int]]
 
     def choice(self):
+
         board = self.frame.get_board()
 
         result = None
-        exists = []
-        blist = list(board)
-        for i in range(len(blist)):
-            if blist[i] != 0:
-                exists.append(i)
+        empty = []
+        for i in range(len(board)):
+            if board[i] == 0:
+                empty.append(i)
+
+        print(board)
+        board = bytes(board)
 
         if board in self.qtable:
             rates = self.qtable[board]
             mrate = max(rates)
             indexes = []
             for i in range(len(rates)):
-                if rates[i] == mrate and i not in exists:
+                if rates[i] == mrate and i in empty:
                     indexes.append(i)
             if indexes:
-                return choice(indexes)
+                result = choice(indexes)
         
         if result is None:
             print('Random')
-            result = randint(0, 8)
+            result = choice(empty)
 
-        self.frame.choose.emit(result)
+        self.frame.choose(result)

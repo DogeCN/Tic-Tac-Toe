@@ -1,10 +1,8 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
-from PySide6.QtCore import Signal
 from game.board import Board
 from q import QLearning
 
 class MainWindow(QMainWindow):
-    choose = Signal(int)
 
     def __init__(self):
         super().__init__()
@@ -14,20 +12,18 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(Center)
 
         self.board = Board(Center, QLearning(self))
-        self.board.model.choice()
-
-        self.choose.connect(self.choose_)
     
-    def choose_(self, index:int):
+    def choose(self, index:int):
         self.board.buttons[index].animateClick()
 
     def get_board(self):
         board = [0 for _ in range(9)]
-        for player in self.board.group.players:
-            for button in player.queue:
+        players = self.board.group.players
+        for i in range(2):
+            for button in players[i].queue:
                 sign = button.sign
-                board[button.row * 3 + button.column] = sign
-        return bytes(board)
+                board[button.row * 3 + button.column] = sign if i else 256-sign
+        return board
 
 if __name__ == '__main__':
     App = QApplication()

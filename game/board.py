@@ -3,6 +3,8 @@ from skins.default import default
 from game.button import Button, Wrapper
 from game.player import Player
 
+model = True
+
 class Board:
     gaming = True
     group = default
@@ -25,6 +27,7 @@ class Board:
             Wrapper.clear(button)
         for player in self.group.players:
             player.queue.clear()
+        self.group._index = 0
 
     def get(self, row:int, column:int):
         return self.broad[row][column]
@@ -48,6 +51,8 @@ class Board:
 
     def emit(self, button:Button):
         if self.gaming:
+            if button in self.group.queue:
+                return
             self.group.apply(button)
             for i in range(3):
                 rowj = self.judge(self.row(i))
@@ -62,7 +67,9 @@ class Board:
                 if diaj != -1:
                     self.win(diaj)
                     return
-            if not self.group._index:
+            index = self.group._index
+            print(index)
+            if index == 1 and model:
                 self.model.choice()
         else:
             self.restart()

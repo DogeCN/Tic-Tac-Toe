@@ -28,6 +28,5 @@ class PlayerGroup:
         return self.players[index]
 
     def apply(self, button:Button):
-        if button not in self.queue:
-            player = self.players[self.index]
-            player.apply(button)
+        player = self.players[self.index]
+        player.apply(button)
