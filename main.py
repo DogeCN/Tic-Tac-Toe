@@ -124,6 +124,8 @@ class Board:
                 button.clicked.connect(lambda *x, b=button: self.emit(b))
                 grid.addWidget(button, row, column)
         frame.show()
+        if mode % 2:
+            self.choose(0).animateClick()
         app.exec()
 
     def restart(self):
@@ -134,6 +136,8 @@ class Board:
         for player in default.players:
             player.queue.clear()
         default._index = 0
+        if mode % 2:
+            self.choose(0).animateClick()
 
     def get(self, row:int, column:int):
         return self.broad[row][column]
@@ -182,32 +186,62 @@ class Board:
             default.apply(button)
             if self.judge():
                 return
-            if default._index:
-                self.choose().animateClick()
+            index = default._index
+            if index != mode and mode != 2:
+                self.choose(index).animateClick()
         else:
             self.restart()
 
-    def choose(self) -> Button:
-        queue = default.player(0).queue
-        match len(queue):
-            case 2|3:
-                for p in self.probables:
-                    fount = {b for b in queue if b.sign > 1}
-                    pro = set(p)
-                    if fount.issubset(pro):
-                        result = (pro-fount).pop()
-                        if result.sign:
-                            continue
-                        return result
-            case 1:
-                probables = set()
-                bset = set(queue)
-                for p in self.probables:
-                    pset = set(p)
-                    if bset.issubset(pset):
-                        probables.update(pset-bset)
-                return choice(list(probables))
-        return choice(self.empty)
+    def choose(self, index:int) -> Button:
+        result = None
+        myqueue = default.player(index).queue
+        opqueue = default.player(1-index).queue
+        if len(myqueue) > 1:
+            result = self.choose_infront(myqueue)
+        if not result and len(opqueue) > 1:
+            result = self.choose_infront(opqueue)
+        if not result and len(myqueue) > 2:
+            result = self.choose_infront([myqueue[-1], opqueue[0]])
+        if not result and len(opqueue) > 2:
+            result = self.choose_infront([opqueue[-1], myqueue[0]])
+        if not result:
+            prolist = []
+            try:
+                prolist += self.find_probables(myqueue[0])
+            except: ...
+            try:
+                prolist += self.find_probables(opqueue[-1])
+            except: ...
+            if prolist:
+                result = choice(prolist)
+            else:
+                result = choice(self.empty)
+                print('Random')
+        return result
+
+    def choose_infront(self, queue:ButtonQueue):
+        for p in self.probables:
+            front = {b for b in queue if b.sign > 1}
+            pro = set(p)
+            if front.issubset(pro):
+                result = (pro-front).pop()
+                if result.sign:
+                    continue
+                return result
+                        
+    def choose_probables(self, button:Button):
+        return choice(self.find_probables(button))
+
+    def find_probables(self, button:Button):
+        prolist = []
+        bset = {button}
+        for p in self.probables:
+            pset = set(p)
+            if bset.issubset(pset):
+                for button in pset-bset:
+                    if not button.sign:
+                        prolist.append(button)
+        return prolist
 
     def judge(self):
         for player in default.players:
@@ -218,7 +252,12 @@ class Board:
                     button.setFlat(False)
                     button.sign = 3
                     super(Player, winner).apply(button)
+                if mode == 3:
+                    self.restart()
                 return True
         return False
+
+mode = 0 #type: int[0, 1, 2, 3]
+# 0: single player (first hand), 1: single player (last hand), 2: multiplayer, 3: auto
 
 Board()
