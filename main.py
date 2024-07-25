@@ -471,21 +471,6 @@ class PlayerGroup:
         player.apply(button)
 
 
-
-default = PlayerGroup()
-
-player1 = default.player(0)
-player1.text = '〇'
-player1.style = 'font: 700 60px;'
-player1.color = (0, 255, 0)
-
-player2 = default.player(1)
-player2.text = '⨯'
-player2.style = 'font-size: 80px;'
-player2.color = (255, 0, 0)
-
-
-
 class Board:
     gaming = True
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
@@ -642,12 +627,12 @@ class Board:
 
     def get_mode(self):
         ini = \
-        '''mode = 3
-        # 0: single player (first hand)
-        # 1: single player (last hand)
-        # 2: multiplayer
-        # 3: auto
-        '''
+'''mode = 3
+# 0: single player (first hand)
+# 1: single player (last hand)
+# 2: multiplayer
+# 3: auto
+'''
 
         try:
             raw = open('mode.ini').readline()
@@ -657,5 +642,18 @@ class Board:
             open('mode.ini', 'w').write(ini)
             mode = 0
         return mode
+
+default = PlayerGroup()
+
+player1 = default.player(0)
+player1.text = '〇'
+player1.style = 'font: 700 70px;'
+player1.color = (0, 255, 0)
+
+player2 = default.player(1)
+player2.text = '⨯'
+player2.style = 'font-size: 100px; padding-bottom : 15px;'
+player2.color = (255, 0, 0)
+
 
 Board()
