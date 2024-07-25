@@ -627,7 +627,7 @@ class Board:
 
     def get_mode(self):
         ini = \
-'''mode = 3
+'''mode = 0
 # 0: single player (first hand)
 # 1: single player (last hand)
 # 2: multiplayer
