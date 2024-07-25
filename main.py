@@ -110,6 +110,7 @@ class Board:
     broad = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self):
+        self.mode = self.get_mode()
         app = QApplication()
         frame = QMainWindow()
         frame.setWindowTitle('Tic Tac Toe')
@@ -124,7 +125,7 @@ class Board:
                 button.clicked.connect(lambda *x, b=button: self.emit(b))
                 grid.addWidget(button, row, column)
         frame.show()
-        if mode % 2:
+        if self.mode % 2:
             self.choose(0).animateClick()
         app.exec()
 
@@ -136,7 +137,7 @@ class Board:
         for player in default.players:
             player.queue.clear()
         default._index = 0
-        if mode % 2:
+        if self.mode % 2:
             self.choose(0).animateClick()
 
     def get(self, row:int, column:int):
@@ -187,7 +188,7 @@ class Board:
             if self.judge():
                 return
             index = default._index
-            if index != mode and mode != 2:
+            if index != self.mode and self.mode != 2:
                 self.choose(index).animateClick()
         else:
             self.restart()
@@ -216,7 +217,6 @@ class Board:
                 result = choice(prolist)
             else:
                 result = choice(self.empty)
-                print('Random')
         return result
 
     def choose_infront(self, queue:ButtonQueue):
@@ -252,12 +252,27 @@ class Board:
                     button.setFlat(False)
                     button.sign = 3
                     super(Player, winner).apply(button)
-                if mode == 3:
+                if self.mode == 3:
                     self.restart()
                 return True
         return False
 
-mode = 0 #type: int[0, 1, 2, 3]
-# 0: single player (first hand), 1: single player (last hand), 2: multiplayer, 3: auto
+    def get_mode(self):
+        ini = \
+        '''mode = 3
+        # 0: single player (first hand)
+        # 1: single player (last hand)
+        # 2: multiplayer
+        # 3: auto
+        '''
+
+        try:
+            raw = open('mode.ini').readline()
+            value = raw.split('=')[-1].split('#')[0].strip()
+            mode = int(value)
+        except:
+            open('mode.ini', 'w').write(ini)
+            mode = 0
+        return mode
 
 Board()
