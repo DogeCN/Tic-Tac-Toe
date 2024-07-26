@@ -14,7 +14,7 @@ class Board:
     def __init__(self):
         self.mode = get_mode()
         self.ai = Intelligence(self)
-        self.step = Step(self)
+        self.steps = Steps(self)
         app = QApplication()
         frame = MainWindow()
         center = QWidget(frame)
@@ -27,8 +27,8 @@ class Board:
                 button.clicked.connect(lambda *x, b=button: self.emit(b))
                 button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
                 grid.addWidget(button, row, column)
-        frame.psignal.connect(self.step.pre)
-        frame.nsignal.connect(self.step.next)
+        frame.psignal.connect(self.steps.pre)
+        frame.nsignal.connect(self.steps.next)
         frame.show()
         if self.mode % 2:
             self.ai.choose(0)
@@ -74,7 +74,7 @@ class Board:
             if button in default.queue:
                 return
             default.apply(button)
-            self.step.record()
+            self.steps.record()
             if self.judge():
                 return
             index = default._index
@@ -82,7 +82,7 @@ class Board:
                 self.ai.choose(index)
         else:
             self.restart()
-            self.step.rec_empty()
+            self.steps.rec_empty()
 
     def judge(self):
         for player in default.players:
@@ -109,7 +109,7 @@ class Board:
         if self.mode % 2:
             self.ai.choose(0)
 
-class Step(list[list[list[tuple[int]]]]):
+class Steps(list[list[list[tuple[int]]]]):
     pointer = -1
 
     def __init__(self, board:Board):
