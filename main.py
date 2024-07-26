@@ -1,65 +1,11 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QWidget, QGridLayout
+from PySide6.QtCore import Qt
 from sprites.button import Button, Wrapper
 from sprites.player import Player
 from config import get_mode
+from ui.main import MainWindow
 from ui.skin import default
 from random import choice
-from ui import res
-
-class MainWindow(QMainWindow):
-    psignal = Signal()
-    nsignal = Signal()
-
-    def __init__(self):
-        super().__init__()
-        res.Reg()
-        self.setWindowTitle('Tic Tac Toe')
-        self.setGeometry(100, 100, 400, 400)
-        self.setFixedSize(400, 400)
-        self.setWindowIcon(QIcon(':/img/favicon.ico'))
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Left:
-            self.psignal.emit()
-        elif event.key() == Qt.Key.Key_Right:
-            self.nsignal.emit()
-
-class Step(list[Button]):
-    pointer = -1
-
-    def __init__(self, board):
-        self.board = board #type: Board
-
-    def append(self, button:Button):
-        super().append(button)
-        self.pointer += 1
-
-    def clear(self):
-        super().clear()
-        self.pointer = 0
-
-    def pre(self):
-        if self.pointer >= 0:
-            Wrapper.clear(self[self.pointer])
-            self.board.gaming = True
-            pointer = self.pointer
-            length = 6 if len(self) >= 6 else len(self)
-            for button in self[pointer-length+1:pointer]:
-                button.setFlat(False)
-                button.sign += 1
-            ...
-            self.pointer -= 1
-    
-    def next(self):
-        if self.pointer < len(self):
-            self.pointer += 1
-            button = self[self.pointer]
-            default.apply(button)
-            self.board.judge()
-            return button
-
 
 class Board:
     gaming = True
@@ -128,21 +74,22 @@ class Board:
             if button in default.queue:
                 return
             default.apply(button)
+            self.step.record()
             if self.judge():
                 return
             index = default._index
-            self.step.append(button)
             if index != self.mode and self.mode != 2:
                 self.ai.choose(index)
         else:
-            self.step.clear()
             self.restart()
+            self.step.rec_empty()
 
     def judge(self):
         for player in default.players:
             if sorted(player.queue, key=lambda b:(b.row, b.column)) in self.probables:
                 self.gaming = False
                 winner = default.player(player.index)
+                default._index = 0
                 for button in winner.queue:
                     button.setFlat(False)
                     button.sign = 3
@@ -159,9 +106,70 @@ class Board:
             Wrapper.clear(button)
         for player in default.players:
             player.queue.clear()
-        default._index = 0
         if self.mode % 2:
             self.ai.choose(0)
+
+class Step(list[list[list[tuple[int]]]]):
+    pointer = -1
+
+    def __init__(self, board:Board):
+        self.board = board
+        self.rec_empty()
+
+    @property
+    def current(self):
+        return self[self.pointer]
+
+    def record(self):
+        behind = len(self) - self.pointer - 1
+        if behind:
+            for _ in range(behind):
+                self.pop()
+        group = []
+        for player in default.players:
+            queue = []
+            for button in player.queue:
+                queue.insert(0, (button.row, button.column))
+            group.append(queue)
+        super().append(group)
+        self.pointer += 1
+
+    def rec_empty(self):
+        super().append([])
+        self.pointer += 1
+
+    def occurent(self):
+        index = default._index
+        for button in self.board.buttons:
+            Wrapper.clear(button)
+            button.setFlat(True)
+        for i in range(2):
+            default.player(i).queue.clear()
+        if self.current:
+            for i in range(2):
+                queue = self.current[i]
+                for pos in queue:
+                    default._index = i
+                    default.apply(self.board.get(*pos))
+        else:
+            index = 0
+        default._index = index
+
+    def pre(self):
+        if self.pointer > 0:
+            default.index
+            self.board.gaming = True
+            self.pointer -= 1
+            self.occurent()
+            self.board.judge()
+
+    def next(self):
+        if self.pointer < len(self) - 1:
+            default.index
+            self.board.gaming = True
+            self.pointer += 1
+            self.occurent()
+            self.board.judge()
 
 class Intelligence:
 
@@ -191,7 +199,7 @@ class Intelligence:
         if not result and mylen > 2:
             result = self.choice_infront([myqueue[1], opqueue[0]])
         if not result and oplen > 2:
-            result = self.choice_infront([opqueue[1], myqueue[0]])
+            result = self.choice_infront([opqueue[-1], myqueue[0]])
         if not result:
             prolist = []
             if myqueue:
