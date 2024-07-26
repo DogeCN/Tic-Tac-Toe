@@ -5,7 +5,7 @@
 But you have most **THREE** pieces.
 
 
-![image](https://github.com/user-attachments/assets/1c7bcf33-3e5d-44fa-8e96-edeb27f2d902)
+![image](https://github.com/user-attachments/assets/330a07fa-c720-4c15-9112-cf73f8204938)
 
 
 ### Multiple Modes
