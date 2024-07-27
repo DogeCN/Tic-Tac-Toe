@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QMainWindow, QMenu
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QIcon, QAction, QActionGroup
 from PySide6.QtCore import Qt, Signal
 from settings import Setting
 from ui import res
@@ -17,6 +17,45 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 400, 400)
         self.setFixedSize(400, 400)
         self.setWindowIcon(QIcon(':/img/favicon.ico'))
+        self.initMenu()
+    
+    def initMenu(self):
+        self.menu = QMenu(self)
+
+        contexts = ['First Hand', 'Last Hand', 'Multiplayer', 'Auto Play']
+        actions = QActionGroup(self)
+        for i in range(len(contexts)):
+            action = QAction(contexts[i], self)
+            action.setCheckable(True)
+            if i == Setting.mode:
+                action.setChecked(True)
+            action.toggled.connect(lambda *e, i=i: setattr(Setting, 'mode', i))
+            actions.addAction(action)
+        self.menu.addActions(actions.actions())
+
+        self.menu.addSeparator()
+        
+        pre = QAction('Previous Step', self)
+        pre.setShortcut(Qt.Key.Key_Left)
+        pre.triggered.connect(self.psignal)
+        self.menu.addAction(pre)
+
+        next = QAction('Next Step', self)
+        next.setShortcut(Qt.Key.Key_Right)
+        next.triggered.connect(self.nsignal)
+        self.menu.addAction(next)
+
+        new = QAction('New', self)
+        new.triggered.connect(self.new)
+        self.menu.addAction(new)
+
+        self.menu.addSeparator()
+
+        quit = QAction('Quit', self)
+        quit.triggered.connect(self.close)
+        self.menu.addAction(quit)
+
+        self.menu.closeEvent = lambda *e: self.update()
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -35,32 +74,4 @@ class MainWindow(QMainWindow):
     
     def contextMenuEvent(self, event):
         pos = event.globalPos()
-
-        menu = QMenu(self)
- 
-        modes = QMenu('Mode', self)
-
-        contexts = ['First Hand', 'Last Hand', 'Multiplayer', 'Auto Play']
-        for i in range(len(contexts)):
-            action = QAction(contexts[i], self)
-            action.setCheckable(True)
-            if i == Setting.mode:
-                action.setChecked(True)
-            action.toggled.connect(lambda *e, i=i: self.setMode(i))
-            modes.addAction(action)
-
-        menu.addMenu(modes)
-        
-        new = QAction('New', self)
-        new.triggered.connect(self.new)
-        menu.addAction(new)
-
-        quit = QAction('Quit', self)
-        quit.triggered.connect(self.close)
-        menu.addAction(quit)
-
-        menu.closeEvent = lambda *e: self.update()
-        menu.popup(pos)
-
-    def setMode(self, mode:int):
-        Setting.mode = mode
+        self.menu.popup(pos)
