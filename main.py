@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QGridLayout
 from PySide6.QtCore import Qt
 from sprites.button import Button, Wrapper
 from sprites.player import Player
-from config import get_mode
+from settings import Setting
 from ui.main import MainWindow
 from ui.skin import default
 from random import choice
@@ -12,7 +12,6 @@ class Board:
     board = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self):
-        self.mode = get_mode()
         self.ai = Intelligence(self)
         self.steps = Steps(self)
         app = QApplication()
@@ -29,8 +28,9 @@ class Board:
                 grid.addWidget(button, row, column)
         frame.psignal.connect(self.steps.pre)
         frame.nsignal.connect(self.steps.next)
+        frame.new.connect(self.restart)
         frame.show()
-        if self.mode % 2:
+        if Setting.mode % 2:
             self.ai.choose(0)
         app.exec()
 
@@ -78,11 +78,10 @@ class Board:
             if self.judge():
                 return
             index = default._index
-            if index != self.mode and self.mode != 2:
+            if index != Setting.mode and Setting.mode != 2:
                 self.ai.choose(index)
         else:
             self.restart()
-            self.steps.rec_empty()
 
     def judge(self):
         for player in default.players:
@@ -94,19 +93,21 @@ class Board:
                     button.setFlat(False)
                     button.sign = 3
                     super(Player, winner).apply(button)
-                if self.mode == 3:
+                if Setting.mode == 3:
                     self.restart()
                 return True
         return False
 
     def restart(self):
+        self.steps.rec_empty()
         self.gaming = True
         for button in self.buttons:
             button.setFlat(True)
             Wrapper.clear(button)
         for player in default.players:
             player.queue.clear()
-        if self.mode % 2:
+        default._index = 0
+        if Setting.mode % 2:
             self.ai.choose(0)
 
 class Steps(list[list[list[tuple[int]]]]):
@@ -193,30 +194,39 @@ class Intelligence:
         opqueue = default.player(1-index).queue
         mylen, oplen = len(myqueue), len(opqueue)
         if mylen > 1:
-            result = self.choice_infront(myqueue)
+            result = self.choice_infront(myqueue[:2])
         if not result and oplen > 1:
-            result = self.choice_infront(opqueue)
+            result = self.choice_infront(opqueue[:2])
+        if not result and oplen > 2:
+            result = self.choice_infront([opqueue[-1], myqueue[0]])
         if not result and mylen > 2:
             result = self.choice_infront([myqueue[1], opqueue[0]])
         if not result and oplen > 2:
-            result = self.choice_infront([opqueue[-1], myqueue[0]])
+            result = self.choice_probables(opqueue[1])
         if not result:
-            prolist = []
+            mypro = oppro = set()
             if myqueue:
-                prolist += self.find_probables(myqueue[0])
-            if oplen > 2:
-                prolist += self.find_probables(opqueue[1])
+                mypro = self.find_probables(myqueue[0])
             elif opqueue:
-                prolist += self.find_probables(opqueue[0])
-            if prolist:
-                result = choice(prolist)
+                oppro = self.find_probables(opqueue[0]) 
+            same = mypro.intersection(oppro)
+            if same:
+                result = self.choice_one(same)
             else:
-                result = choice(self.empty)
+                if mypro:
+                    result = self.choice_one(mypro)
+                elif oppro:
+                    result = self.choice_one(oppro)
+                else:
+                    result = self.choice_one(self.empty)
         return result
 
+    def choice_one(self, buttons:list[Button]):
+        return choice(list(buttons))
+
     def choice_infront(self, queue:list[Button]):
+        front = set(queue)
         for p in self.probables:
-            front = {b for b in queue if b.sign > 1}
             pro = set(p)
             if front.issubset(pro):
                 result = (pro-front).pop()
@@ -225,17 +235,17 @@ class Intelligence:
                 return result
                         
     def choice_probables(self, button:Button):
-        return choice(self.find_probables(button))
+        return self.choice_one(self.find_probables(button))
 
     def find_probables(self, button:Button):
-        prolist = []
+        prolist = set()
         bset = {button}
         for p in self.probables:
             pset = set(p)
             if bset.issubset(pset):
                 for button in pset-bset:
                     if not button.sign:
-                        prolist.append(button)
+                        prolist.add(button)
         return prolist
 
 Board()
