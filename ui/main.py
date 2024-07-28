@@ -9,6 +9,8 @@ class MainWindow(QMainWindow):
     psignal = Signal()
     nsignal = Signal()
     new = Signal()
+    server = Signal()
+    client = Signal()
 
     def __init__(self):
         super().__init__()
@@ -23,15 +25,15 @@ class MainWindow(QMainWindow):
         self.menu = QMenu(self)
 
         contexts = ['First Hand', 'Last Hand', 'Multiplayer', 'Auto Play']
-        actions = QActionGroup(self)
+        self.modea = QActionGroup(self)
         for i in range(len(contexts)):
             action = QAction(contexts[i], self)
             action.setCheckable(True)
             if i == Setting.mode:
                 action.setChecked(True)
             action.toggled.connect(lambda *e, i=i: setattr(Setting, 'mode', i))
-            actions.addAction(action)
-        self.menu.addActions(actions.actions())
+            self.modea.addAction(action)
+        self.menu.addActions(self.modea.actions())
 
         self.menu.addSeparator()
         
@@ -48,6 +50,20 @@ class MainWindow(QMainWindow):
         new = QAction('New', self)
         new.triggered.connect(self.new)
         self.menu.addAction(new)
+
+        self.menu.addSeparator()
+
+        self.online = QActionGroup(self)
+
+        server = QAction('Start a Server', self)
+        server.triggered.connect(self.server)
+        self.online.addAction(server)
+        self.menu.addAction(server)
+
+        client = QAction('Connect to a Server', self)
+        client.triggered.connect(self.client)
+        self.online.addAction(client)
+        self.menu.addAction(client)
 
         self.menu.addSeparator()
 
@@ -74,4 +90,8 @@ class MainWindow(QMainWindow):
     
     def contextMenuEvent(self, event):
         pos = event.globalPos()
+
+        if Setting.mode != 2:
+            self.online.setEnabled(False)
+
         self.menu.popup(pos)

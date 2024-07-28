@@ -1,38 +1,53 @@
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal, QObject
 from sprites.button import Button, Wrapper
 from sprites.player import Player
 from settings import Setting
+from network import NetWork
 from ui.main import MainWindow
 from ui.skin import default
 from random import choice
+
+class Intermediary(QObject):
+    received = Signal(tuple)
 
 class Board:
     gaming = True
     board = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
 
     def __init__(self):
+        app = QApplication()
         self.ai = Intelligence(self)
         self.steps = Steps(self)
-        app = QApplication()
-        frame = MainWindow()
-        center = QWidget(frame)
-        frame.setCentralWidget(center)
+        self.imd = Intermediary()
+        self.net = NetWork(self.imd.received)
+        self.imd.received.connect(lambda p: self.get(*p).animateClick())
+        self.build_frame()
+        self.connect_actions()
+        if Setting.mode % 2:
+            self.ai.choose(0)
+        app.exec()
+
+    def build_frame(self):
+        self.frame = MainWindow()
+        center = QWidget(self.frame)
+        self.frame.setCentralWidget(center)
         grid = QGridLayout(center)
         for row in range(3):
             for column in range(3):
-                button = Button(frame, row, column)
+                button = Button(self.frame, row, column)
                 self.board[row][column] = button
                 button.clicked.connect(lambda *x, b=button: self.emit(b))
                 button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
                 grid.addWidget(button, row, column)
-        frame.psignal.connect(self.steps.pre)
-        frame.nsignal.connect(self.steps.next)
-        frame.new.connect(self.restart)
-        frame.show()
-        if Setting.mode % 2:
-            self.ai.choose(0)
-        app.exec()
+        self.frame.show()
+
+    def connect_actions(self):
+        self.frame.psignal.connect(self.steps.pre)
+        self.frame.nsignal.connect(self.steps.next)
+        self.frame.new.connect(self.restart)
+        self.frame.server.connect(lambda:self.net.server(self.frame))
+        self.frame.client.connect(lambda:self.net.client(self.frame))
 
     def get(self, row:int, column:int):
         return self.board[row][column]
@@ -75,6 +90,8 @@ class Board:
                 return
             default.apply(button)
             self.steps.record()
+            if Setting.mode == 2:
+                self.net.send(button.row, button.column)
             if self.judge():
                 return
             index = default._index
@@ -88,7 +105,6 @@ class Board:
             if sorted(player.queue, key=lambda b:(b.row, b.column)) in self.probables:
                 self.gaming = False
                 winner = default.player(player.index)
-                default._index = 0
                 for button in winner.queue:
                     button.setFlat(False)
                     button.sign = 3
@@ -202,7 +218,9 @@ class Intelligence:
         if not result and mylen > 2:
             result = self.choice_infront([myqueue[1], opqueue[0]])
         if not result and oplen > 2:
-            result = self.choice_probables(opqueue[1])
+            prolist = self.find_probables(opqueue[1])
+            if prolist:
+                result = self.choice_one(prolist)
         if not result:
             mypro = oppro = set()
             if myqueue:
@@ -233,9 +251,6 @@ class Intelligence:
                 if result.sign:
                     continue
                 return result
-                        
-    def choice_probables(self, button:Button):
-        return self.choice_one(self.find_probables(button))
 
     def find_probables(self, button:Button):
         prolist = set()
