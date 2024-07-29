@@ -58,3 +58,8 @@ class ButtonQueue(list[Button]):
                 Wrapper.clear(self.pop())
             else:
                 button.sign = sign
+    
+    def clear(self):
+        for button in self:
+            Wrapper.clear(button)
+        super().clear()

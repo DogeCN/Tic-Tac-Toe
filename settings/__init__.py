@@ -3,6 +3,14 @@ import os
 
 data = os.getenv('AppData') + os.sep + 'Tic-Tac-Toe'
 
+ast = [
+    [False, True, False, False],
+    [True, False, True, False],
+    [False, False, False, False],
+    [True, True, True, True],
+    [False, False, False, False]
+]
+
 class Settings:
     def __init__(self, file):
         try:
@@ -20,6 +28,9 @@ class Settings:
         try:
             dump(data, Setting)
         except: ...
+
+    def ast(self, index):
+        return ast[self.mode][index]
 
     def __getattr__(self, name):
         self._load()

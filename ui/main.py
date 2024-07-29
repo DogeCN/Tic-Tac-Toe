@@ -9,7 +9,6 @@ class MainWindow(QMainWindow):
     psignal = Signal()
     nsignal = Signal()
     new = Signal()
-    server = Signal()
     client = Signal()
 
     def __init__(self):
@@ -37,33 +36,30 @@ class MainWindow(QMainWindow):
 
         self.menu.addSeparator()
         
+        self.control = QActionGroup(self)
+
         pre = QAction('Previous Step', self)
         pre.setShortcut(Qt.Key.Key_Left)
         pre.triggered.connect(self.psignal)
+        self.control.addAction(pre)
         self.menu.addAction(pre)
 
         next = QAction('Next Step', self)
         next.setShortcut(Qt.Key.Key_Right)
         next.triggered.connect(self.nsignal)
+        self.control.addAction(next)
         self.menu.addAction(next)
 
         new = QAction('New', self)
         new.triggered.connect(self.new)
+        self.control.addAction(new)
         self.menu.addAction(new)
 
         self.menu.addSeparator()
 
-        self.online = QActionGroup(self)
-
-        server = QAction('Start a Server', self)
-        server.triggered.connect(self.server)
-        self.online.addAction(server)
-        self.menu.addAction(server)
-
-        client = QAction('Connect to a Server', self)
-        client.triggered.connect(self.client)
-        self.online.addAction(client)
-        self.menu.addAction(client)
+        self.client_ = QAction('Connect to a Server', self)
+        self.client_.triggered.connect(self.client)
+        self.menu.addAction(self.client_)
 
         self.menu.addSeparator()
 
@@ -74,13 +70,15 @@ class MainWindow(QMainWindow):
         self.menu.closeEvent = lambda *e: self.update()
 
     def keyPressEvent(self, event):
-        key = event.key()
-        if key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
-            self.psignal.emit()
-        elif key == Qt.Key.Key_Right or key == Qt.Key.Key_Down:
-            self.nsignal.emit()
+        if Setting.mode != 4:
+            key = event.key()
+            if key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
+                self.psignal.emit()
+            elif key == Qt.Key.Key_Right or key == Qt.Key.Key_Down:
+                self.nsignal.emit()
 
     def wheelEvent(self, event):
+        if Setting.mode != 4:
             angle = event.angleDelta()
             angleY = angle.y()
             if angleY > 0:
@@ -91,7 +89,13 @@ class MainWindow(QMainWindow):
     def contextMenuEvent(self, event):
         pos = event.globalPos()
 
-        if Setting.mode != 2:
-            self.online.setEnabled(False)
+        if Setting.mode == 4:
+            self.modea.setEnabled(False)
+            self.control.setEnabled(False)
+            self.client_.setEnabled(False)
+        else:
+            self.modea.setEnabled(True)
+            self.control.setEnabled(True)
+            self.client_.setEnabled(True)
 
         self.menu.popup(pos)

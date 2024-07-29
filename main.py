@@ -1,15 +1,12 @@
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout
-from PySide6.QtCore import Qt, Signal, QObject
-from sprites.button import Button, Wrapper
+from PySide6.QtCore import Qt
+from sprites.button import Button
 from sprites.player import Player
 from settings import Setting
 from network import NetWork
 from ui.main import MainWindow
 from ui.skin import default
 from random import choice
-
-class Intermediary(QObject):
-    received = Signal(tuple)
 
 class Board:
     gaming = True
@@ -19,12 +16,12 @@ class Board:
         app = QApplication()
         self.ai = Intelligence(self)
         self.steps = Steps(self)
-        self.imd = Intermediary()
-        self.net = NetWork(self.imd.received)
-        self.imd.received.connect(lambda p: self.get(*p).animateClick())
         self.build_frame()
+        self.net = NetWork(self.frame)
         self.connect_actions()
-        if Setting.mode % 2:
+        if Setting.mode == 4:
+            Setting.mode = 0
+        if Setting.ast(2):
             self.ai.choose(0)
         app.exec()
 
@@ -46,8 +43,31 @@ class Board:
         self.frame.psignal.connect(self.steps.pre)
         self.frame.nsignal.connect(self.steps.next)
         self.frame.new.connect(self.restart)
-        self.frame.server.connect(lambda:self.net.server(self.frame))
-        self.frame.client.connect(lambda:self.net.client(self.frame))
+        self.frame.client.connect(self.net.start_client)
+        self.net.received.connect(self.receive)
+        self.net.connected.connect(self.online)
+
+    def online(self, index:int):
+        Setting.mode = 4
+        default._index = index
+        for button in self.buttons:
+            if index:
+                button.setEnabled(False)
+            button.setFlat(True)
+        self.gaming = True
+        for player in default.players:
+            player.queue.clear()
+
+    def receive(self, group:list):
+        self.steps.record(group)
+        self.steps.occurent()
+        if group:
+            enable = True
+        else:
+            enable = False
+            default._index = 1
+        for button in self.buttons:
+            button.setEnabled(enable)
 
     def get(self, row:int, column:int):
         return self.board[row][column]
@@ -89,13 +109,16 @@ class Board:
             if button in default.queue:
                 return
             default.apply(button)
-            self.steps.record()
-            if Setting.mode == 2:
-                self.net.send(button.row, button.column)
+            group = self.steps.record()
+            if Setting.mode == 4:
+                self.net.send(group)
+                default.index
+                for button in self.buttons:
+                    button.setEnabled(False)
             if self.judge():
                 return
             index = default._index
-            if index != Setting.mode and Setting.mode != 2:
+            if Setting.ast(index):
                 self.ai.choose(index)
         else:
             self.restart()
@@ -109,21 +132,25 @@ class Board:
                     button.setFlat(False)
                     button.sign = 3
                     super(Player, winner).apply(button)
-                if Setting.mode == 3:
+                if Setting.ast(3):
                     self.restart()
+                elif Setting.mode == 4:
+                    for button in self.buttons:
+                        button.setEnabled(True)
                 return True
         return False
 
     def restart(self):
-        self.steps.rec_empty()
+        self.steps.record([])
         self.gaming = True
         for button in self.buttons:
             button.setFlat(True)
-            Wrapper.clear(button)
         for player in default.players:
             player.queue.clear()
+        if Setting.mode == 4:
+            self.net.send([])
         default._index = 0
-        if Setting.mode % 2:
+        if Setting.ast(2):
             self.ai.choose(0)
 
 class Steps(list[list[list[tuple[int]]]]):
@@ -131,62 +158,56 @@ class Steps(list[list[list[tuple[int]]]]):
 
     def __init__(self, board:Board):
         self.board = board
-        self.rec_empty()
+        self.record([])
 
     @property
     def current(self):
         return self[self.pointer]
 
-    def record(self):
-        behind = len(self) - self.pointer - 1
-        if behind:
-            for _ in range(behind):
-                self.pop()
-        group = []
-        for player in default.players:
-            queue = []
-            for button in player.queue:
-                queue.insert(0, (button.row, button.column))
-            group.append(queue)
+    def record(self, group: list[list[tuple[int]]] | None = None):
+        if group is None:
+            behind = len(self) - self.pointer - 1
+            if behind:
+                for _ in range(behind):
+                    self.pop()
+            group = []
+            for player in default.players:
+                queue = []
+                for button in player.queue:
+                    queue.insert(0, (button.row, button.column))
+                group.append(queue)
         super().append(group)
         self.pointer += 1
+        return group
 
-    def rec_empty(self):
-        super().append([])
-        self.pointer += 1
-
-    def occurent(self):
+    def occurent(self, group: list[list[tuple[int]]] | None = None):
+        self.board.gaming = True
         index = default._index
         for button in self.board.buttons:
-            Wrapper.clear(button)
             button.setFlat(True)
         for i in range(2):
             default.player(i).queue.clear()
-        if self.current:
+        group = self.current if group is None else group
+        if group:
             for i in range(2):
-                queue = self.current[i]
+                queue = group[i]
                 for pos in queue:
                     default._index = i
                     default.apply(self.board.get(*pos))
         else:
             index = 0
         default._index = index
+        self.board.judge()
 
     def pre(self):
         if self.pointer > 0:
-            default.index
-            self.board.gaming = True
             self.pointer -= 1
             self.occurent()
-            self.board.judge()
 
     def next(self):
         if self.pointer < len(self) - 1:
-            default.index
-            self.board.gaming = True
             self.pointer += 1
             self.occurent()
-            self.board.judge()
 
 class Intelligence:
 
@@ -215,7 +236,7 @@ class Intelligence:
             result = self.choice_infront(opqueue[:2])
         if not result and oplen > 2:
             result = self.choice_infront([opqueue[-1], myqueue[0]])
-        if not result and mylen > 2:
+        if not result and mylen > 1:
             result = self.choice_infront([myqueue[1], opqueue[0]])
         if not result and oplen > 2:
             prolist = self.find_probables(opqueue[1])
