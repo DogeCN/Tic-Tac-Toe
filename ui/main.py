@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
         self.menu.closeEvent = lambda *e: self.update()
 
     def keyPressEvent(self, event):
-        if Setting.mode != 4:
+        if not Setting.online:
             key = event.key()
             if key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
                 self.psignal.emit()
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
                 self.nsignal.emit()
 
     def wheelEvent(self, event):
-        if Setting.mode != 4:
+        if not Setting.online:
             angle = event.angleDelta()
             angleY = angle.y()
             if angleY > 0:
@@ -89,13 +89,13 @@ class MainWindow(QMainWindow):
     def contextMenuEvent(self, event):
         pos = event.globalPos()
 
-        if Setting.mode == 4:
+        if Setting.online:
             self.modea.setEnabled(False)
             self.control.setEnabled(False)
-            self.client_.setEnabled(False)
+            self.client_.setText('Disconnect')
         else:
             self.modea.setEnabled(True)
             self.control.setEnabled(True)
-            self.client_.setEnabled(True)
+            self.client_.setText('Connect to a Server')
 
         self.menu.popup(pos)

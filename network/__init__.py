@@ -9,6 +9,7 @@ class NetWork(QObject):
     connected = Signal(int)
     warning = Signal(str)
     conn = None #type: socket
+    onconn = False
 
     def __init__(self, frame):
         super().__init__(frame)
@@ -22,7 +23,8 @@ class NetWork(QObject):
             self.server.bind(('127.0.0.1', 25565))
             Thread(target=self.listenloop, daemon=True).start()
         except OSError:
-            self.warn('Port 25565 in use')
+            if not self.onconn and not Setting.online:
+                self.warn('Port 25565 in use')
 
     def listenloop(self):
         while True:
@@ -30,31 +32,40 @@ class NetWork(QObject):
                 self.server.listen(1)
                 self.conn, _ = self.server.accept()
                 self.connected.emit(0)
+                self.onconn = True
                 self.recvloop()
             except OSError:
-                self.start_server()
+                if self.onconn:
+                    self.start_server()
+                    self.onconn = False
                 break
 
     def start_client(self):
-        address, choice = QInputDialog.getText(self.frame, 'Connect to a Server', 'Entry the address')
-        if choice:
-            if address:
-                address = address.split(":")
-                host = ''.join(address[:-1])
-                port = int(address[-1])
-            else:
-                host = '127.0.0.1'
-                port = 25565
-            self.server.close()
-            client = socket()
-            try:
-                client.connect((host, port))
-            except OSError:
-                self.warn('Connection Refused')
-                return
-            self.conn = client
-            self.connected.emit(1)
-            Thread(target=self.recvloop, daemon=True).start()
+        if self.onconn:
+            self.onconn = False
+            self.conn.close()
+            self.start_server()
+        else:
+            address, choice = QInputDialog.getText(self.frame, 'Connect to a Server', 'Entry the address')
+            if choice:
+                if address:
+                    address = address.split(":")
+                    host = ''.join(address[:-1])
+                    port = int(address[-1])
+                else:
+                    host = '127.0.0.1'
+                    port = 25565
+                self.server.close()
+                client = socket()
+                try:
+                    client.connect((host, port))
+                except OSError:
+                    self.warn('Connection Refused')
+                    return
+                self.onconn = True
+                self.conn = client
+                self.connected.emit(1)
+                Thread(target=self.recvloop, daemon=True).start()
             
     def send(self, msg):
         data = repr(msg).encode()
@@ -76,11 +87,14 @@ class NetWork(QObject):
                 break
 
     def close_conn(self):
-        self.conn.close()
-        self.warning.emit('Connection Lost')
+        if self.onconn:
+            self.onconn = False
+            self.conn.close()
+            self.warning.emit('Connection Lost')
+        self.connected.emit(0)
 
     def warn(self, msg:str):
         QMessageBox.warning(self.frame, 'Warning', msg)
-        if Setting.mode == 4:
-            Setting.mode = 0
+        if Setting.online:
             self.received.emit([[],[]])
+            Setting.online = False

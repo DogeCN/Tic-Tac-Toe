@@ -8,7 +8,6 @@ ast = [
     [True, False, True, False],
     [False, False, False, False],
     [True, True, True, True],
-    [False, False, False, False]
 ]
 
 class Settings:
@@ -17,6 +16,7 @@ class Settings:
             self.__dict__ = load(file).__dict__
         except:
             self.mode = 0
+            self.online = False
 
     @staticmethod
     def _load():

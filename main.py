@@ -17,10 +17,10 @@ class Board:
         self.ai = Intelligence(self)
         self.steps = Steps(self)
         self.build_frame()
+        if Setting.online:
+            Setting.online = False
         self.net = NetWork(self.frame)
         self.connect_actions()
-        if Setting.mode == 4:
-            Setting.mode = 0
         if Setting.ast(2):
             self.ai.choose(0)
         app.exec()
@@ -48,11 +48,13 @@ class Board:
         self.net.connected.connect(self.online)
 
     def online(self, index:int):
-        Setting.mode = 4
+        if Setting.online:
+            Setting.online = False
+        else:
+            Setting.online = True
         default._index = index
         for button in self.buttons:
-            if index:
-                button.setEnabled(False)
+            button.setEnabled(not bool(index))
             button.setFlat(True)
         self.gaming = True
         for player in default.players:
@@ -110,7 +112,7 @@ class Board:
                 return
             default.apply(button)
             group = self.steps.record()
-            if Setting.mode == 4:
+            if Setting.online:
                 self.net.send(group)
                 default.index
                 for button in self.buttons:
@@ -134,7 +136,7 @@ class Board:
                     super(Player, winner).apply(button)
                 if Setting.ast(3):
                     self.restart()
-                elif Setting.mode == 4:
+                elif Setting.online:
                     for button in self.buttons:
                         button.setEnabled(True)
                 return True
@@ -147,7 +149,7 @@ class Board:
             button.setFlat(True)
         for player in default.players:
             player.queue.clear()
-        if Setting.mode == 4:
+        if Setting.online:
             self.net.send([])
         default._index = 0
         if Setting.ast(2):
