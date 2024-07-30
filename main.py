@@ -203,11 +203,13 @@ class Steps(list[list[list[tuple[int]]]]):
 
     def pre(self):
         if self.pointer > 0:
+            default.index
             self.pointer -= 1
             self.occurent()
 
     def next(self):
         if self.pointer < len(self) - 1:
+            default.index
             self.pointer += 1
             self.occurent()
 
@@ -224,6 +226,10 @@ class Intelligence:
     def empty(self):
         return [b for b in self.board.buttons if not b.sign]
 
+    @property
+    def corner(self):
+        return {self.board.get(r, c) for r in [0, 2] for c in [0, 2]}
+
     def choose(self, index:int):
         self.choice(index).animateClick()
 
@@ -232,6 +238,7 @@ class Intelligence:
         myqueue = default.player(index).queue
         opqueue = default.player(1-index).queue
         mylen, oplen = len(myqueue), len(opqueue)
+        print(mylen, oplen)
         if mylen > 1:
             result = self.choice_infront(myqueue[:2])
         if not result and oplen > 1:
@@ -249,17 +256,31 @@ class Intelligence:
             if myqueue:
                 mypro = self.find_probables(myqueue[0])
             elif opqueue:
-                oppro = self.find_probables(opqueue[0]) 
+                oppro = self.find_probables(opqueue[0])
             same = mypro.intersection(oppro)
-            if same:
-                result = self.choice_one(same)
+            if index:
+                match oplen:
+                    case 1:
+                        op = opqueue[0]
+                        row = op.row
+                        col = op.column
+                        if row == col == 1:
+                            result = self.choice_one(self.corner)
+                        elif op in self.corner:
+                            result = self.board.get(1, 1)
+                        else:
+                            result = self.choice_one(self.corner.difference(oppro))
             else:
-                if mypro:
+                match oplen:
+                    case 0:
+                        result = self.choice_one(self.empty)
+            if not result:
+                if same:
+                    result = self.choice_one(same)
+                elif mypro:
                     result = self.choice_one(mypro)
                 elif oppro:
                     result = self.choice_one(oppro)
-                else:
-                    result = self.choice_one(self.empty)
         return result
 
     def choice_one(self, buttons:list[Button]):
@@ -284,6 +305,8 @@ class Intelligence:
                 for button in pset-bset:
                     if not button.sign:
                         prolist.add(button)
+                    else:
+                        break
         return prolist
 
 Board()

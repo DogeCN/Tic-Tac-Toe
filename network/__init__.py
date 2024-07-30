@@ -1,8 +1,10 @@
 from PySide6.QtWidgets import QInputDialog, QMessageBox
 from PySide6.QtCore import QObject, Signal
 from settings import Setting
+from zlib import compress, decompress
 from threading import Thread
 from socket import socket
+
 
 class NetWork(QObject):
     received = Signal(list)
@@ -68,7 +70,7 @@ class NetWork(QObject):
                 Thread(target=self.recvloop, daemon=True).start()
             
     def send(self, msg):
-        data = repr(msg).encode()
+        data = compress(repr(msg).encode())
         try:
             if self.conn:
                 self.conn.send(data)
@@ -80,7 +82,7 @@ class NetWork(QObject):
             try:
                 data = self.conn.recv(1024)
                 if data:
-                    msg = eval(data)
+                    msg = eval(decompress(data).decode())
                     self.received.emit(msg)
             except OSError:
                 self.close_conn()
