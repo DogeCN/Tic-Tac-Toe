@@ -17,6 +17,7 @@ class Settings:
         except:
             self.mode = 0
             self.online = False
+            self.address = '127.0.0.1:25565'
 
     @staticmethod
     def _load():
@@ -31,10 +32,6 @@ class Settings:
 
     def ast(self, index):
         return ast[self.mode][index]
-
-    def __getattr__(self, name):
-        self._load()
-        return super().__getattr__(self, name)
 
     def __setattr__(self, name, value):
         super().__setattr__(name, value)

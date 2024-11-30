@@ -50,13 +50,22 @@ class NetWork(QObject):
         else:
             address, choice = QInputDialog.getText(self.frame, 'Connect to a Server', 'Entry the address')
             if choice:
-                if address:
+                if ':' in address:
                     address = address.split(":")
                     host = ''.join(address[:-1])
-                    port = int(address[-1])
+                    if not host:
+                        host = '127.0.0.1'
+                    try:
+                        port = address[-1]
+                        port = int(port) if port else 25565
+                    except ValueError:
+                        self.warn('Invalid Port')
+                        return
                 else:
-                    host = '127.0.0.1'
+                    host = address
                     port = 25565
+                if not host:
+                    host = '127.0.0.1'
                 self.server.close()
                 client = socket()
                 try:
