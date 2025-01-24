@@ -246,7 +246,6 @@ class Intelligence:
         myqueue = default.player(index).queue
         opqueue = default.player(1 - index).queue
         mylen, oplen = len(myqueue), len(opqueue)
-        print(mylen, oplen)
         if mylen > 1:
             result = self.choice_infront(myqueue[:2])
         if not result and oplen > 1:
