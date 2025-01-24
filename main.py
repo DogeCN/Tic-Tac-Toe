@@ -8,9 +8,10 @@ from ui.main import MainWindow
 from ui.skin import default
 from random import choice
 
+
 class Board:
     gaming = True
-    board = [[None for _ in range(3)] for _ in range(3)] #type: list[list[Button]]
+    board = [[None for _ in range(3)] for _ in range(3)]  # type: list[list[Button]]
 
     def __init__(self):
         app = QApplication()
@@ -40,6 +41,7 @@ class Board:
         self.frame.show()
 
     def connect_actions(self):
+        self.frame.send.connect(self.net.send)
         self.frame.psignal.connect(self.steps.pre)
         self.frame.nsignal.connect(self.steps.next)
         self.frame.new.connect(self.restart)
@@ -47,7 +49,7 @@ class Board:
         self.net.received.connect(self.receive)
         self.net.connected.connect(self.online)
 
-    def online(self, index:int):
+    def online(self, index: int):
         if Setting.online:
             Setting.online = False
         else:
@@ -60,7 +62,7 @@ class Board:
         for player in default.players:
             player.queue.clear()
 
-    def receive(self, group:list):
+    def receive(self, group: list):
         self.steps.record(group)
         self.steps.occurent()
         if group:
@@ -71,25 +73,29 @@ class Board:
         for button in self.buttons:
             button.setEnabled(enable)
 
-    def get(self, row:int, column:int):
+    def get(self, row: int, column: int):
         return self.board[row][column]
 
-    def row(self, row:int):
+    def row(self, row: int):
         return self.board[row]
 
     @property
     def rows(self):
         return self.board
 
-    def column(self, column:int):
+    def column(self, column: int):
         return [self.get(row, column) for row in range(3)]
 
     @property
     def columns(self):
         return [self.column(i) for i in range(3)]
 
-    def diagonal(self, diagonal:int|bool):
-        return [self.get(i, 2 - i) for i in range(3)] if diagonal else [self.get(i, i) for i in range(3)]
+    def diagonal(self, diagonal: int | bool):
+        return (
+            [self.get(i, 2 - i) for i in range(3)]
+            if diagonal
+            else [self.get(i, i) for i in range(3)]
+        )
 
     @property
     def diagonals(self):
@@ -106,7 +112,7 @@ class Board:
             buttons += r
         return buttons
 
-    def emit(self, button:Button):
+    def emit(self, button: Button):
         if self.gaming:
             if button in default.queue:
                 return
@@ -127,7 +133,7 @@ class Board:
 
     def judge(self):
         for player in default.players:
-            if sorted(player.queue, key=lambda b:(b.row, b.column)) in self.probables:
+            if sorted(player.queue, key=lambda b: (b.row, b.column)) in self.probables:
                 self.gaming = False
                 winner = default.player(player.index)
                 for button in winner.queue:
@@ -155,10 +161,11 @@ class Board:
         if Setting.ast(2):
             self.ai.choose(0)
 
+
 class Steps(list[list[list[tuple[int]]]]):
     pointer = -1
 
-    def __init__(self, board:Board):
+    def __init__(self, board: Board):
         self.board = board
         self.record([])
 
@@ -213,9 +220,10 @@ class Steps(list[list[list[tuple[int]]]]):
             self.pointer += 1
             self.occurent()
 
+
 class Intelligence:
 
-    def __init__(self, board:Board):
+    def __init__(self, board: Board):
         self.board = board
 
     @property
@@ -230,13 +238,13 @@ class Intelligence:
     def corner(self):
         return {self.board.get(r, c) for r in [0, 2] for c in [0, 2]}
 
-    def choose(self, index:int):
+    def choose(self, index: int):
         self.choice(index).animateClick()
 
-    def choice(self, index:int) -> Button:
+    def choice(self, index: int) -> Button:
         result = None
         myqueue = default.player(index).queue
-        opqueue = default.player(1-index).queue
+        opqueue = default.player(1 - index).queue
         mylen, oplen = len(myqueue), len(opqueue)
         print(mylen, oplen)
         if mylen > 1:
@@ -283,30 +291,31 @@ class Intelligence:
                     result = self.choice_one(oppro)
         return result
 
-    def choice_one(self, buttons:list[Button]):
+    def choice_one(self, buttons: list[Button]):
         return choice(list(buttons))
 
-    def choice_infront(self, queue:list[Button]):
+    def choice_infront(self, queue: list[Button]):
         front = set(queue)
         for p in self.probables:
             pro = set(p)
             if front.issubset(pro):
-                result = (pro-front).pop()
+                result = (pro - front).pop()
                 if result.sign:
                     continue
                 return result
 
-    def find_probables(self, button:Button):
+    def find_probables(self, button: Button):
         prolist = set()
         bset = {button}
         for p in self.probables:
             pset = set(p)
             if bset.issubset(pset):
-                for button in pset-bset:
+                for button in pset - bset:
                     if not button.sign:
                         prolist.add(button)
                     else:
                         break
         return prolist
+
 
 Board()
