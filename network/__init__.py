@@ -51,7 +51,10 @@ class NetWork(QObject):
             self.start_server()
         else:
             address, choice = QInputDialog.getText(
-                self.frame, "Connect to a Server", "Entry the address"
+                self.frame,
+                "Connect to a Server",
+                "Entry the address",
+                text=Setting.address,
             )
             if choice:
                 if ":" in address:
@@ -74,6 +77,7 @@ class NetWork(QObject):
                 client = socket()
                 try:
                     client.connect((host, port))
+                    Setting.address = f"{host}:{port}"
                 except OSError:
                     self.warn("Connection Refused")
                     return

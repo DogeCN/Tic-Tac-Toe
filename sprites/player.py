@@ -7,7 +7,7 @@ class Player(Wrapper):
         self.index = index
         self.queue = ButtonQueue()
 
-    def apply(self, button:Button):
+    def apply(self, button: Button):
         super().apply(button)
         self.queue.append(button)
 
@@ -26,9 +26,9 @@ class PlayerGroup:
     def queue(self):
         return self.player(0).queue + self.player(1).queue
 
-    def player(self, index:int):
+    def player(self, index: int):
         return self.players[index]
 
-    def apply(self, button:Button):
+    def apply(self, button: Button):
         player = self.players[self.index]
         player.apply(button)

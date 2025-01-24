@@ -1,7 +1,10 @@
 from .iobase import load, dump
 import os
 
-data = os.getenv('AppData') + os.sep + 'Tic-Tac-Toe'
+datadir = os.getenv("AppData") + os.sep + "Tic-Tac-Toe"
+if not os.path.exists(datadir):
+    os.mkdir(datadir)
+data = datadir + os.sep + "settings.dat"
 
 ast = [
     [False, True, False, False],
@@ -10,6 +13,7 @@ ast = [
     [True, True, True, True],
 ]
 
+
 class Settings:
     def __init__(self, file):
         try:
@@ -17,7 +21,7 @@ class Settings:
         except:
             self.mode = 0
             self.online = False
-            self.address = '127.0.0.1:25565'
+            self.address = "127.0.0.1:25565"
 
     @staticmethod
     def _load():
@@ -28,7 +32,8 @@ class Settings:
     def _dump():
         try:
             dump(data, Setting)
-        except: ...
+        except:
+            ...
 
     def ast(self, index):
         return ast[self.mode][index]
@@ -36,5 +41,6 @@ class Settings:
     def __setattr__(self, name, value):
         super().__setattr__(name, value)
         self._dump()
+
 
 Settings._load()

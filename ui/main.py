@@ -82,7 +82,9 @@ class MainWindow(QMainWindow):
     def keyPressEvent(self, event):
         if not Setting.online:
             key = event.key()
-            if key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
+            if key == Qt.Key.Key_Escape:
+                self.close()
+            elif key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
                 self.psignal.emit()
             elif key == Qt.Key.Key_Right or key == Qt.Key.Key_Down:
                 self.nsignal.emit()
