@@ -10,7 +10,7 @@ class NetWork(QObject):
     received = Signal(list)
     connected = Signal(int)
     warning = Signal(str)
-    infomation = Signal(str)
+    infomation = Signal(str, str)
     conn = None  # type: socket
     onconn = False
 
@@ -34,8 +34,9 @@ class NetWork(QObject):
         while True:
             try:
                 self.server.listen(1)
-                self.conn, _ = self.server.accept()
+                self.conn, (address, _) = self.server.accept()
                 self.connected.emit(0)
+                self.infomation.emit("Connected", f"Remote connected by {address}")
                 self.onconn = True
                 self.recvloop()
             except OSError:
@@ -77,9 +78,12 @@ class NetWork(QObject):
                 client = socket()
                 try:
                     client.connect((host, port))
-                    Setting.address = f"{host}:{port}"
-                except OSError:
-                    self.warn("Connection Refused")
+                    address = f"{host}:{port}"
+                    self.infomation.emit("Connected", f"Connected to {address}")
+                    Setting.address = address
+                except OSError as e:
+                    self.warn(f"Connection Refused: {e}")
+                    self.start_server()
                     return
                 self.onconn = True
                 self.conn = client
@@ -101,7 +105,7 @@ class NetWork(QObject):
                 if data:
                     msg = eval(decompress(data).decode())
                     if isinstance(msg, str):
-                        self.infomation.emit(msg)
+                        self.infomation.emit("Received Message", msg)
                     else:
                         self.received.emit(msg)
             except OSError:
@@ -115,8 +119,8 @@ class NetWork(QObject):
             self.warning.emit("Connection Lost")
         self.connected.emit(0)
 
-    def info(self, msg: str):
-        QMessageBox.information(self.frame, "Information", f"Received Message: {msg}")
+    def info(self, title: str, msg: str):
+        QMessageBox.information(self.frame, title, msg)
 
     def warn(self, msg: str):
         QMessageBox.warning(self.frame, "Warning", msg)

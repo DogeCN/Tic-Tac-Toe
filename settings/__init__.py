@@ -39,6 +39,8 @@ class Settings:
         return ast[self.mode][index]
 
     def __setattr__(self, name, value):
+        if getattr(self, name) == value:
+            return
         super().__setattr__(name, value)
         self._dump()
 

@@ -63,12 +63,14 @@ class MainWindow(QMainWindow):
         self.menu.addAction(self.client_)
 
         self.send_ = QAction("Send", self)
+        self.send_.setShortcut(Qt.Key.Key_Return | Qt.Key.Key_Enter)
         self.send_.triggered.connect(self.send_msg)
         self.menu.addAction(self.send_)
 
         self.menu.addSeparator()
 
         quit = QAction("Quit", self)
+        quit.setShortcut(Qt.Key.Key_Escape)
         quit.triggered.connect(self.close)
         self.menu.addAction(quit)
 
@@ -80,8 +82,13 @@ class MainWindow(QMainWindow):
             self.send.emit(msg)
 
     def keyPressEvent(self, event):
-        if not Setting.online:
-            key = event.key()
+        key = event.key()
+        if Setting.online:
+            if key == Qt.Key.Key_Return or key == Qt.Key.Key_Enter:
+                self.send_msg()
+            elif key == Qt.Key.Key_Control | Qt.Key.Key_Q:
+                self.client.emit()
+        else:
             if key == Qt.Key.Key_Escape:
                 self.close()
             elif key == Qt.Key.Key_Left or key == Qt.Key.Key_Up:
