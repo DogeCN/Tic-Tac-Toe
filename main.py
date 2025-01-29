@@ -140,7 +140,7 @@ class Board:
                     button.setFlat(False)
                     button.sign = 3
                     super(Player, winner).apply(button)
-                if Setting.ast(3):
+                if Setting.ast(3) and Setting.mode != 3:
                     self.restart()
                 elif Setting.online:
                     for button in self.buttons:
@@ -288,6 +288,8 @@ class Intelligence:
                     result = self.choice_one(mypro)
                 elif oppro:
                     result = self.choice_one(oppro)
+                else:
+                    result = self.choice_one(self.empty)
         return result
 
     def choice_one(self, buttons: list[Button]):
