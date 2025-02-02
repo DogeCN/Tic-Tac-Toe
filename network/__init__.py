@@ -81,8 +81,8 @@ class NetWork(QObject):
                     address = f"{host}:{port}"
                     self.infomation.emit("Connected", f"Connected to {address}")
                     Setting.address = address
-                except OSError as e:
-                    self.warn(f"Connection Refused: {e}")
+                except OSError:
+                    self.warn(f"Connection Refused")
                     self.start_server()
                     return
                 self.onconn = True
