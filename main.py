@@ -18,8 +18,7 @@ class Board:
         self.ai = Intelligence(self)
         self.steps = Steps(self)
         self.build_frame()
-        if Setting.online:
-            Setting.online = False
+        Setting.online = False
         self.net = NetWork(self.frame)
         self.connect_actions()
         if Setting.ast(2):
@@ -50,10 +49,7 @@ class Board:
         self.net.connected.connect(self.online)
 
     def online(self, index: int):
-        if Setting.online:
-            Setting.online = False
-        else:
-            Setting.online = True
+        Setting.online = not Setting.online
         default._index = index
         for button in self.buttons:
             button.setEnabled(not bool(index))

@@ -31,7 +31,9 @@ class MainWindow(QMainWindow):
             action.setCheckable(True)
             if i == Setting.mode:
                 action.setChecked(True)
-            action.toggled.connect(lambda *e, i=i: setattr(Setting, "mode", i))
+            action.toggled.connect(
+                lambda *e, i=i: setattr(Setting, "mode", i) & Setting.dump()
+            )
             self.modea.addAction(action)
         self.menu.addActions(self.modea.actions())
 

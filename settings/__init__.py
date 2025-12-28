@@ -16,12 +16,12 @@ ast = [
 
 class Settings:
     def __init__(self, file):
+        config = {"mode": 0, "online": False, "address": "127.0.0.1:25565"}
         try:
-            self.__dict__ = load(file).__dict__
+            config.update(load(file).__dict__)
         except:
-            self.mode = 0
-            self.online = False
-            self.address = "127.0.0.1:25565"
+            ...
+        self.__dict__ = config
 
     @staticmethod
     def _load():
@@ -29,7 +29,7 @@ class Settings:
         Setting = Settings(data)
 
     @staticmethod
-    def _dump():
+    def dump():
         try:
             dump(data, Setting)
         except:
@@ -37,12 +37,6 @@ class Settings:
 
     def ast(self, index):
         return ast[self.mode][index]
-
-    def __setattr__(self, name, value):
-        if getattr(self, name) == value:
-            return
-        super().__setattr__(name, value)
-        self._dump()
 
 
 Settings._load()
